@@ -69,6 +69,12 @@ footer {
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.slide img {
+  pointer-events: none;
 }
 
 .slide-image {
@@ -84,6 +90,8 @@ footer {
   object-fit: cover;
   will-change: transform;
   transform: scale(2.25);
+  user-select: none;
+  pointer-events: none;
   user-select: none;
 }
 

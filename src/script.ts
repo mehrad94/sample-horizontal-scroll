@@ -237,15 +237,15 @@ function handleMouseDown(e: MouseEvent) {
 
 function handleMouseMove(e: MouseEvent) {
   if (!state.isDragging) return;
-  e.preventDefault();
-  const deltaX = (e.clientX - state.lastMouseX) * 2;
-  state.targetX += deltaX;
+
+  const deltaX = e.clientX - state.lastMouseX;
+  state.targetX += deltaX * 1.5; // 1.5 baraye sensitivity-e bishtar
   state.lastMouseX = e.clientX;
   state.dragDistance += Math.abs(deltaX);
-
-  if (state.dragDistance > 5) {
+  if (state.dragDistance > 10) {
     state.hasActuallyDragged = true;
   }
+
   state.lastScrollTime = Date.now();
 }
 
@@ -261,7 +261,7 @@ function handleResize() {
 }
 
 function initializeEventListener() {
-  const slider = document.querySelector(".slider");
+  const slider = document.querySelector(".slider") as HTMLElement;
   slider?.addEventListener("wheel", handleWheel, { passive: false });
   slider?.addEventListener("touchstart", handleTouchStart);
   slider?.addEventListener("touchmove", handleTouchMove);
