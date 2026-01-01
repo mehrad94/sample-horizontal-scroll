@@ -15,6 +15,7 @@ const state = {
   slides: [] as HTMLDivElement[],
   isDragging: false,
   startX: 0,
+  startY: 0,
   lastX: 0,
   lastMouseX: 0,
   lastScrollTime: Date.now(),
@@ -24,6 +25,7 @@ const state = {
   dragDistance: 0,
   hasActuallyDragged: false,
   isMobile: false,
+  touchDirectionLocked: null as null | "horizontal" | "vertical",
 };
 
 function checkMobile() {
@@ -200,21 +202,45 @@ function handleWheel(e: WheelEvent) {
 function handleTouchStart(e: TouchEvent) {
   state.isDragging = true;
   state.startX = e.touches[0].clientX;
+  state.startY = e.touches[0].clientY;
   state.lastX = state.targetX;
   state.dragDistance = 0;
   state.hasActuallyDragged = false;
   state.lastScrollTime = Date.now();
+  state.touchDirectionLocked = null;
 }
 
 function handleTouchMove(e: TouchEvent) {
   if (!state.isDragging) return;
-  const deltaX = (e.touches[0].clientX - state.startX) * 1.5;
-  state.targetX = state.lastX + deltaX;
-  state.dragDistance = Math.abs(deltaX);
-  if (state.dragDistance > 5) {
-    state.hasActuallyDragged = true;
+
+  const touchX = e.touches[0].clientX;
+  const touchY = e.touches[0].clientY;
+  const dx = touchX - state.startX;
+  const dy = touchY - state.startY;
+
+  // If direction not locked yet, decide whether gesture is horizontal or vertical
+  if (!state.touchDirectionLocked) {
+    if (Math.abs(dx) > Math.abs(dy)) {
+      state.touchDirectionLocked = "horizontal";
+    } else {
+      state.touchDirectionLocked = "vertical";
+    }
   }
-  state.lastScrollTime = Date.now();
+
+  // If horizontal gesture, prevent page from vertically scrolling and handle slider
+  if (state.touchDirectionLocked === "horizontal") {
+    e.preventDefault();
+    const deltaX = dx * 1.5;
+    state.targetX = state.lastX + deltaX;
+    state.dragDistance = Math.abs(deltaX);
+    if (state.dragDistance > 5) {
+      state.hasActuallyDragged = true;
+    }
+    state.lastScrollTime = Date.now();
+  } else {
+    // vertical gesture: let the browser handle scrolling
+    return;
+  }
 }
 
 function handleTouchEnd() {
@@ -222,6 +248,7 @@ function handleTouchEnd() {
   setTimeout(() => {
     state.hasActuallyDragged = false;
   }, 100);
+  state.touchDirectionLocked = null;
 }
 
 function handleMouseDown(e: MouseEvent) {
@@ -263,9 +290,10 @@ function handleResize() {
 function initializeEventListener() {
   const slider = document.querySelector(".slider") as HTMLElement;
   slider?.addEventListener("wheel", handleWheel, { passive: false });
-  slider?.addEventListener("touchstart", handleTouchStart);
-  slider?.addEventListener("touchmove", handleTouchMove);
-  slider?.addEventListener("touchend", handleTouchEnd);
+  slider?.addEventListener("touchstart", handleTouchStart, { passive: true });
+  slider?.addEventListener("touchmove", handleTouchMove, { passive: false });
+  slider?.addEventListener("touchend", handleTouchEnd, { passive: true });
+  slider?.addEventListener("touchcancel", handleTouchEnd, { passive: true });
   slider?.addEventListener("mousedown", handleMouseDown);
   slider?.addEventListener("mouseleave", handleMouseUp);
   slider?.addEventListener("dragstart", (e) => e.preventDefault());
